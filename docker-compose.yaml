@@ -1,0 +1,113 @@
+version: "3.8"
+services:
+	management1:
+		container_name: "management"
+		image: mysql/mysql-cluster
+		volumes:
+			- /home/arjun/mysql-cluster
+		command: manage
+		networks:
+			mysqlcluster:
+				ipv4_address: 192.192.0.2
+
+	node1:
+		container_name: "node1"
+		image: mysql/mysql-cluster
+		volumes:
+			- /home/arjun/mysql-cluster
+		command: node
+		depends_on:
+			- "management1"
+		networks:
+			mysqlcluster:
+				ipv4_address: 192.192.0.3
+		expose:
+			- "3306"
+		restart: always
+
+	node2:
+		container_name: "node2"
+		image: mysql/mysql-cluster
+		volumes:
+			- /home/arjun/mysql-cluster
+		command: node
+		depends_on:
+			- "management1"
+		networks:
+			mysqlcluster:
+				ipv4_address: 192.192.0.4
+		expose:
+			- "3306"
+		restart: always
+
+	node3:
+		container_name: "node3"
+		image: mysql/mysql-cluster
+		volumes:
+			- /home/arjun/mysql-cluster
+		command: node
+		depends_on:
+			- "management1"
+		networks:
+			mysqlcluster:
+				ipv4_address: 192.192.0.5
+		expose:
+			- "3306"
+		restart: always
+
+	mysql1:
+		container_name: "mysql-server"
+		image: mysql/mysql-cluster
+		volumes:
+			- /home/arjun/mysql-cluster
+			- ./init.sql:/home/arjun/mysql-cluster/test.sql
+		command: mysqld
+		environment:
+			- MYSQL_ROOT_PASSWORD=${ROOT_PASSWORD}
+			- MYSQL_DATABASE:"pucsdSudents"
+			- MYSQL_USER:"pucsd"
+			- MYSQL_PASSWORD:"pucsd"
+		depends_on:
+			- "management1"
+			- "ndb1"
+			- "ndb2"
+		networks:
+			mysqlcluster:
+				ipv4_address: 192.192.0.6
+		expose:
+			- "3306"
+		restart: always
+
+	workbench:
+		container_name: "mysql-workbench"
+		image: openkbs/mysql-workbench
+		volumes:
+			- /home/arjun/mysql-cluster
+		environment:
+#			- USER_ID=1000
+#			- GROUP_ID=1000
+			- MYSQL_ROOT_PASSWORD=${ROOT_PASSWORD}
+			- MYSQL_DATABASE:"pucsdSudents"
+			- MYSQL_USER:"pucsd"
+			- MYSQL_PASSWORD:"pucsd"
+#		ports:
+#			- "3306:3306"
+		expose:
+			- "3306"
+		links:
+			- management1
+			- node1
+			- node2
+			- node3
+			- mysql1
+		restart: always
+
+networks:
+	app_net:
+		driver: bridge
+		enable_ipv4: true
+		ipam:
+			driver: default
+			config:
+				- subnet: 192.192.0.0/24
+				  gateway: 192.192.0.1
